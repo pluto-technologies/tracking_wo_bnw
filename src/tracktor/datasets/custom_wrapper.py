@@ -30,7 +30,7 @@ class CustomSequence(Dataset):
         self._seq_name = seq_name
         self._vis_threshold = vis_threshold
         self.output_dir = result_dir
-        self.img_dir = "/Users/raimo/Desktop/Pluto/tracking_wo_bnw/data/" + seq_name
+        self.img_dir = "../../data/" + seq_name
         file_names = sorted(os.listdir(self.img_dir), key = lambda x: x[:4])
         self.file_path = [self.img_dir  + "/" + name for name in file_names]
 
