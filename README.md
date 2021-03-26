@@ -8,13 +8,13 @@ make setup
 
 #### Run
 
-Clone the project on a machine with a GPU (e.g. the Pluto _darknet_ instance).
+Clone the project on a machine with a GPU (e.g. the Pluto _tracktor_ instance).
 _Ensure that the instance is running before you do this step_.
 
 Use SSH port forwarding to connect to a jupyter notebook run locally:
 ```bash
 gcloud beta compute \
-  ssh "darknet" \
+  ssh "tracktor" \
     --zone "europe-west4-a" \
     --project "pluto-a31d9" \
     -- -L 8888:localhost:8888 -A
@@ -31,7 +31,7 @@ gcloud beta compute \
   scp \
     --zone "europe-west4-a" \
     --project "pluto-a31d9" \
-    "darknet:/home/kalk/tracktor/experiments/scripts/*avi"
+    "tracktor:/home/kalk/tracktor/experiments/scripts/*avi"
     ~/tmp/
 ```
 
