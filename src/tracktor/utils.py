@@ -50,6 +50,43 @@ colors = [
     'tomato', 'turquoise', 'violet', 'wheat', 'white', 'whitesmoke', 'yellow', 'yellowgreen'
 ]
 
+classes = {
+   "A20"        : "Nummerplade",
+   "D40"        : "Afskalning",
+   "D01"        : "Revne",
+   "D50"        : "Sætning",
+   "P10"        : "Vejmarkering",
+   "D11"        : "Revne",
+   "A10"        : "Ansigt",
+   "LEGACY_D10" : "Revne",
+   "P20"        : "Vejmarkering",
+   "D20"        : "Krakelering",
+   "D10"        : "Revne",
+   "D41"        : "Slaghul",
+   "D60"        : "Kantstensskade",
+   "R30"        : "Revneforsegling",
+   "S10"        : "Trafikskilt",
+   "D30"        : "Stentab",
+   "R10"        : "Lapning",
+   "M10"        : "Dæksel",
+   "M20"        : "Rist",
+   "F10"        : "Bremsespor",
+   "M30"        : "Brandhane",
+   "D70"        : "Revnet fortovsflise",
+   "D80"        : "Vegetation",
+   "D90"        : "Svedning",
+   "M40"        : "Stillads",
+   "M50"        : "Container",
+   "F20"        : "Træpind",
+   "F30"        : "Olieplet",
+   "S20"        : "Midlertidig skiltning",
+   "R20"        : "Lapning",
+   "S30"        : "Skilt bagside"
+}
+
+class_index = {str(i): label for i, label in enumerate(classes.keys())}
+ 
+
 
 # From frcnn/utils/bbox.py
 def bbox_overlaps(boxes, query_boxes):
@@ -312,10 +349,24 @@ def interpolate_tracks(tracks):
             y1_inter = interp1d(frames, y1)
 
             for f in range(min(frames), max(frames) + 1):
-                bb = np.array([x0_inter(f), y0_inter(f), x1_inter(f), y1_inter(f)])
+                bb = np.array([
+                    x0_inter(f),
+                    y0_inter(f),
+                    x1_inter(f),
+                    y1_inter(f),
+                    int(bb[4]),
+                    bb[5]
+                ])
                 interpolated[i][f] = bb
         else:
-            interpolated[i][frames[0]] = np.array([x0[0], y0[0], x1[0], y1[0]])
+            interpolated[i][frames[0]] = np.array([
+                x0[0],
+                y0[0],
+                x1[0],
+                y1[0],
+                int(bb[4]),
+                bb[5]
+            ])
 
     return interpolated
 

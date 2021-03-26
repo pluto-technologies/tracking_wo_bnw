@@ -23,7 +23,11 @@ class FRCNN_FPN(FasterRCNN):
         img = img.to(device)
         detections = self(img)[0]
         #print(detections['labels'])
-        return detections['boxes'].detach(), detections['scores'].detach()
+        return (
+            detections['boxes'].detach(),
+            detections['labels'].detach(),
+            detections['scores'].detach()
+        )
 
     def predict_boxes(self, boxes):
         device = list(self.parameters())[0].device

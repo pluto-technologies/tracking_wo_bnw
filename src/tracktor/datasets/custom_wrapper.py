@@ -56,10 +56,10 @@ class CustomSequence(Dataset):
         all_tracks: dictionary with 1 dictionary for every track with {..., i:np.array([x1,y1,x2,y2]), ...} at key track_num
 
         Each file contains these lines:
-        <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
+        <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>, <label>
         """
 
-        #format_str = "{}, -1, {}, {}, {}, {}, {}, -1, -1, -1"
+        #format_str = "{}, -1, {}, {}, {}, {}, {}, -1, -1, -1, {}"
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -72,6 +72,8 @@ class CustomSequence(Dataset):
                     y1 = bb[1]
                     x2 = bb[2]
                     y2 = bb[3]
+                    label = int(bb[4])
+                    conf = bb[5]
                     writer.writerow(
                         [frame + 1,
                          i + 1,
@@ -79,7 +81,7 @@ class CustomSequence(Dataset):
                          y1 + 1,
                          x2 - x1 + 1,
                          y2 - y1 + 1,
-                         -1, -1, -1, -1])
+                         conf, -1, -1, -1, label])
 
     def load_results(self):
         file_path = osp.join(self.output_dir, self._seq_name)

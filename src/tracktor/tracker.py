@@ -32,7 +32,6 @@ class Tracker:
         self.reid_iou_threshold = tracker_cfg['reid_iou_threshold']
         self.do_align = tracker_cfg['do_align']
         self.motion_model_cfg = tracker_cfg['motion_model']
-
         self.warp_mode = getattr(cv2, tracker_cfg['warp_mode'])
         self.number_of_iterations = tracker_cfg['number_of_iterations']
         self.termination_eps = tracker_cfg['termination_eps']
@@ -58,13 +57,14 @@ class Tracker:
             t.pos = t.last_pos[-1]
         self.inactive_tracks += tracks
 
-    def add(self, new_det_pos, new_det_scores, new_det_features):
+    def add(self, new_det_pos, new_det_scores, new_det_labels, new_det_features):
         """Initializes new Track objects and saves them."""
         num_new = new_det_pos.size(0)
         for i in range(num_new):
             self.tracks.append(Track(
                 new_det_pos[i].view(1, -1),
                 new_det_scores[i],
+                new_det_labels[i],
                 self.track_num + i,
                 new_det_features[i].view(1, -1),
                 self.inactive_patience,
@@ -273,7 +273,7 @@ class Tracker:
             else:
                 boxes = scores = torch.zeros(0).cuda()
         else:
-            boxes, scores = self.obj_detect.detect(blob['img'])
+            boxes, labels, scores = self.obj_detect.detect(blob['img'])
 
         if boxes.nelement() > 0:
             boxes = clip_boxes_to_image(boxes, blob['img'].shape[-2:])
@@ -287,9 +287,13 @@ class Tracker:
             det_pos = boxes[inds]
 
             det_scores = scores[inds]
+
+            det_labels = labels[inds]
+
         else:
             det_pos = torch.zeros(0).cuda()
             det_scores = torch.zeros(0).cuda()
+            det_labels = torch.zeros(0).cuda()
 
         ##################
         # Predict tracks #
@@ -336,6 +340,7 @@ class Tracker:
             keep = nms(det_pos, det_scores, self.detection_nms_thresh)
             det_pos = det_pos[keep]
             det_scores = det_scores[keep]
+            det_labels = det_labels[keep]
 
             # check with every track in a single run (problem if tracks delete each other)
             for t in self.tracks:
@@ -348,19 +353,26 @@ class Tracker:
 
                 det_pos = det_pos[keep]
                 det_scores = det_scores[keep]
+                det_label = det_labels[keep]
                 if keep.nelement() == 0:
                     break
 
         if det_pos.nelement() > 0:
             new_det_pos = det_pos
             new_det_scores = det_scores
+            new_det_labels = det_labels
 
             # try to reidentify tracks
+            # TODO: Need to support `new_det_labels` assignment here too,
+            #       once reid is enabled.
             new_det_pos, new_det_scores, new_det_features = self.reid(blob, new_det_pos, new_det_scores)
 
             # add new
             if new_det_pos.nelement() > 0:
-                self.add(new_det_pos, new_det_scores, new_det_features)
+                self.add(new_det_pos,
+                         new_det_scores,
+                         new_det_labels,
+                         new_det_features)
 
         ####################
         # Generate Results #
@@ -369,7 +381,11 @@ class Tracker:
         for t in self.tracks:
             if t.id not in self.results.keys():
                 self.results[t.id] = {}
-            self.results[t.id][self.im_index] = np.concatenate([t.pos[0].cpu().numpy(), np.array([t.score])])
+            self.results[t.id][self.im_index] = np.concatenate([
+                t.pos[0].cpu().numpy(),
+                np.array([t.label.cpu().numpy()]),
+                np.array([t.score.cpu().numpy()])
+            ])
 
         for t in self.inactive_tracks:
             t.count_inactive += 1
@@ -388,10 +404,11 @@ class Tracker:
 class Track(object):
     """This class contains all necessary for every individual track."""
 
-    def __init__(self, pos, score, track_id, features, inactive_patience, max_features_num, mm_steps):
+    def __init__(self, pos, score, label, track_id, features, inactive_patience, max_features_num, mm_steps):
         self.id = track_id
         self.pos = pos
         self.score = score
+        self.label = label
         self.features = deque([features])
         self.ims = deque([])
         self.count_inactive = 0
