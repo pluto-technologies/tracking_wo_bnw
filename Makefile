@@ -1,7 +1,9 @@
+.PHONY: data
+
 all:
 	@echo "A Makefile for setting up tracktor project"
 
-setup: venv/bin/python pytorch tracktor
+setup: venv/bin/python pytorch tracktor data
 
 venv/bin/python:
 	python3.7 -m venv venv
@@ -14,38 +16,21 @@ pytorch: venv/bin/python
 tracktor: venv/bin/python
 	venv/bin/python -m pip install -e .
 
-MOT: tmp/2DMOT2015.zip tmp/MOT16.zip tmp/MOT16.zip tmp/MOT17Det.zip tmp/MOT17.zip tmp/MOT20Det.zip tmp/MOT20.zip
-tracktor: output/faster_rcnn_fpn_training_mot_20/model_epoch_27.model
+data: data/bækvej_faxe/%_img data/hylleholtvej_faxe/%_img data/strandvejen_faxe/%_img
 
-tmp/2DMOT2015.zip:
-	mkdir -p tmp
-	wget -cP tmp https://motchallenge.net/data/2DMOT2015.zip
+data/bækvej_faxe.tar:
+	gsutil cp gs://pluto-tracking-samples/testdata/bækvej_faxe.tar data/
 
-tmp/MOT16.zip:
-	mkdir -p tmp
-	wget -cP tmp https://motchallenge.net/data/MOT16.zip
+data/hylleholtvej_faxe.tar:
+	gsutil cp gs://pluto-tracking-samples/testdata/hylleholtvej_faxe.tar data/
 
-tmp/MOT17Det.zip:
-	mkdir -p tmp
-	wget -cP tmp https://motchallenge.net/data/MOT17Det.zip
-	mkdir -p data/MOT17Det
-	unzip -od data/MOT17Det tmp/MOT17Det.zip
+data/strandvejen_faxe.tar:
+	gsutil cp gs://pluto-tracking-samples/testdata/strandvejen_faxe.tar data/
 
-tmp/MOT17.zip:
-	mkdir -p tmp
-	wget -cP tmp https://motchallenge.net/data/MOT17.zip
+data/bækvej_faxe/%_img: data/bækvej_faxe.tar
+	tar -xzvf data/bækvej_faxe.tar -C data
+data/hylleholtvej_faxe/%_img: data/hylleholtvej_faxe.tar
+	tar -xzvf data/hylleholtvej_faxe.tar -C data
+data/strandvejen_faxe/%_img: data/strandvejen_faxe.tar
+	tar -xzvf data/strandvejen_faxe.tar -C data
 
-tmp/MOT20Det.zip:
-	mkdir -p tmp
-	wget -cP tmp https://motchallenge.net/data/MOT20Det.zip
-
-tmp/MOT20.zip:
-	mkdir -p tmp
-	wget -cP tmp https://motchallenge.net/data/MOT20.zip
-
-tmp/tracking_wo_bnw-output_v4.zip:
-	mkdir -p tmp
-	wget -cP tmp https://vision.in.tum.de/webshare/u/meinhard/tracking_wo_bnw-output_v4.zip
-
-output/faster_rcnn_fpn_training_mot_20/model_epoch_27.model: tmp/tracking_wo_bnw-output_v4.zip
-	unzip -o tmp/tracking_wo_bnw-output_v4.zip
