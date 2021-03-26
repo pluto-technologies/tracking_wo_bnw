@@ -4,6 +4,7 @@ all:
 	@echo "A Makefile for setting up tracktor project"
 
 setup: venv/bin/python pytorch tracktor data
+	mkdir -p output/custom/results
 
 venv/bin/python:
 	python3.7 -m venv venv
