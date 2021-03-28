@@ -84,7 +84,8 @@ classes = {
    "S30"        : "sign back",
 }
 
-class_index = {str(i): label for i, label in enumerate(classes.values())}
+class_index = {str(i): label for i, label in enumerate(classes.keys())}
+label_index = {str(i): label for i, label in enumerate(classes.values())}
 
 
 # From frcnn/utils/bbox.py
