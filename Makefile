@@ -5,6 +5,7 @@ all:
 
 setup: venv/bin/python pytorch tracktor data
 	mkdir -p output/custom/results
+	mkdir -p output/custom/faster_rcnn_fpn/training
 
 venv/bin/python:
 	python3.7 -m venv venv
