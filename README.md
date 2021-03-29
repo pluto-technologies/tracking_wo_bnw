@@ -17,7 +17,7 @@ gcloud beta compute \
   ssh "tracktor" \
     --zone "europe-west4-a" \
     --project "pluto-a31d9" \
-    -- -L 8888:localhost:8888 -A
+    -- -L 8888:localhost:8888 -Aq
 ```
 
 > **Note**: The `-A` flag will forward any `ssh-add` keys to this machine. This makes it possible to authenticate over SSH with GitHub without having to generate machine specific keys. See [this guide](https://dev.to/levivm/how-to-use-ssh-and-ssh-agent-forwarding-more-secure-ssh-2c32) on how to setup SSH agent forwarding.
