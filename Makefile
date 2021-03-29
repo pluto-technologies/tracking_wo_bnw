@@ -1,9 +1,9 @@
-.PHONY: data
+.PHONY: data metrics
 
 all:
 	@echo "A Makefile for setting up tracktor project"
 
-setup: venv/bin/python pytorch tracktor data
+setup: venv/bin/python pytorch tracktor data metrics
 	mkdir -p output/custom/results
 	mkdir -p output/custom/faster_rcnn_fpn/training
 
@@ -36,3 +36,11 @@ data/hylleholtvej_faxe/%_img: data/hylleholtvej_faxe.tar
 data/strandvejen_faxe/%_img: data/strandvejen_faxe.tar
 	tar -xzvf data/strandvejen_faxe.tar -C data
 
+
+metrics: metrics/setup.py
+
+metrics/setup.py:
+	git clone \
+	  git@github.com:rafaelpadilla/review_object_detection_metrics.git \
+	  metrics
+	venv/bin/python setup.py install
