@@ -291,6 +291,7 @@ class Tracker:
             det_pos = torch.zeros(0)
             det_scores = torch.zeros(0)
 
+        #print(det_scores)
         ##################
         # Predict tracks #
         ##################
