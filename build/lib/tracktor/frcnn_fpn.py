@@ -18,19 +18,12 @@ class FRCNN_FPN(FasterRCNN):
         self.preprocessed_images = None
         self.features = None
 
-    def detect(self, img, object_ind):
+    def detect(self, img):
         device = list(self.parameters())[0].device
         img = img.to(device)
         detections = self(img)[0]
         #print(detections['labels'])
-        if object_ind == -1:
-            return (
-            detections['boxes'].detach(),
-            detections['labels'].detach(),
-            detections['scores'].detach()
-        )
-        
-        ind = (detections['labels'] == object_ind).nonzero().reshape(-1)
+        ind = (detections['labels'] == 10).nonzero().reshape(-1)
         #print(detections['scores'][ind])
         return (
             detections['boxes'][ind].detach(),
@@ -38,7 +31,7 @@ class FRCNN_FPN(FasterRCNN):
             detections['scores'][ind].detach()
         )
 
-    def predict_boxes(self, boxes, labels, object_ind):
+    def predict_boxes(self, boxes):
         device = list(self.parameters())[0].device
         boxes = boxes.to(device)
 
@@ -51,16 +44,31 @@ class FRCNN_FPN(FasterRCNN):
 
         pred_boxes = self.roi_heads.box_coder.decode(box_regression, proposals)
         pred_scores = F.softmax(class_logits, -1)
-        
-        if object_ind == -1:
-            pred_boxes = torch.stack([pred_boxes[i, labels[i], :] for i in range(len(labels))], 0).detach()
-            pred_boxes = resize_boxes(pred_boxes, self.preprocessed_images.image_sizes[0], self.original_image_sizes[0])
-            pred_scores = torch.stack([pred_scores[i, labels[i]] for i in range(len(labels))], 0).detach()
-            return pred_boxes, pred_scores
-        
-        pred_boxes = pred_boxes[:, object_ind,:].detach()
+
+        # score_thresh = self.roi_heads.score_thresh
+        # nms_thresh = self.roi_heads.nms_thresh
+
+        # self.roi_heads.score_thresh = self.roi_heads.nms_thresh = 1.0
+        # self.roi_heads.score_thresh = 0.0
+        # self.roi_heads.nms_thresh = 1.0
+        # detections, detector_losses = self.roi_heads(
+        #     features, [boxes.squeeze(dim=0)], images.image_sizes, targets)
+
+        # self.roi_heads.score_thresh = score_thresh
+        # self.roi_heads.nms_thresh = nms_thresh
+
+        # detections = self.transform.postprocess(
+        #     detections, images.image_sizes, original_image_sizes)
+
+        # detections = detections[0]
+        # return detections['boxes'].detach().cpu(), detections['scores'].detach().cpu()
+        #print("Pred Boxes 1")
+        #print(pred_boxes.shape)
+        pred_boxes = pred_boxes[:, 10,:].detach()
+        #print("Pred Boxes 2")
+        #print(pred_boxes.shape)
         pred_boxes = resize_boxes(pred_boxes, self.preprocessed_images.image_sizes[0], self.original_image_sizes[0])
-        pred_scores = pred_scores[:, object_ind].detach()
+        pred_scores = pred_scores[:, 10].detach()
         return pred_boxes, pred_scores
 
     def load_image(self, images):

@@ -36,7 +36,6 @@ class Tracker:
         self.number_of_iterations = tracker_cfg['number_of_iterations']
         self.termination_eps = tracker_cfg['termination_eps']
 
-        
         self.tracks = []
         self.inactive_tracks = []
         self.track_num = 0
@@ -74,29 +73,29 @@ class Tracker:
             ))
         self.track_num += num_new
 
-    def regress_tracks(self, blob, object_ind):
+    def regress_tracks(self, blob):
         """Regress the position of the tracks and also checks their scores."""
+        #print("-----------------------")
         pos = self.get_pos()
-        labels = self.get_labels()
-        print("----------------")
-        print(labels)
-        print(pos)
-        # regress boxes and scores based on the previous positions of each track
-        boxes, scores = self.obj_detect.predict_boxes(pos, labels, object_ind)
+        # regress
+        #print("Pos ")
+        #print(pos.shape)
+        boxes, scores = self.obj_detect.predict_boxes(pos)
         pos = clip_boxes_to_image(boxes, blob['img'].shape[-2:])
-        
-        print(pos)
-        print("----------------")
-        # checking if to keep tracking or detele the track
+        #print("Boxes ")
+        #print(boxes.shape)
+        #print("Scores ")
+        #print(scores.shape)
+        #print("-----------------------")
         s = []
         for i in range(len(self.tracks) - 1, -1, -1):
             t = self.tracks[i]
             t.score = scores[i]
-            #TODO: set up different threshold for each class
             if scores[i] <= self.regression_person_thresh:
                 self.tracks_to_inactive([t])
             else:
                 s.append(scores[i])
+                # t.prev_pos = t.pos
                 t.pos = pos[i].view(1, -1)
 
         return torch.Tensor(s[::-1]).cuda()
@@ -110,10 +109,6 @@ class Tracker:
         else:
             pos = torch.zeros(0).cuda()
         return pos
-    
-    def get_labels(self):
-        """Get the labels of all active tracks."""
-        return [t.label for t in self.tracks]
 
     def get_features(self):
         """Get the features of all active tracks."""
@@ -257,7 +252,7 @@ class Tracker:
                 if t.last_v.nelement() > 0:
                     self.motion_step(t)
 
-    def step(self, blob, object_ind = -1):
+    def step(self, blob):
         """This function should be called every timestep to perform tracking with a blob
         containing the image information.
         """
@@ -270,7 +265,15 @@ class Tracker:
         ###########################
 
         self.obj_detect.load_image(blob['img'])
-        boxes, labels, scores = self.obj_detect.detect(blob['img'], object_ind)
+
+        if self.public_detections:
+            dets = blob['dets'].squeeze(dim=0)
+            if dets.nelement() > 0:
+                boxes, scores = self.obj_detect.predict_boxes(dets)
+            else:
+                boxes = scores = torch.zeros(0).cuda()
+        else:
+            boxes, labels, scores = self.obj_detect.detect(blob['img'])
 
         if boxes.nelement() > 0:
             boxes = clip_boxes_to_image(boxes, blob['img'].shape[-2:])
@@ -282,7 +285,9 @@ class Tracker:
 
         if inds.nelement() > 0:
             det_pos = boxes[inds]
+
             det_scores = scores[inds]
+
             det_labels = labels[inds]
 
         else:
@@ -308,7 +313,7 @@ class Tracker:
                 self.tracks = [t for t in self.tracks if t.has_positive_area()]
 
             # regress
-            person_scores = self.regress_tracks(blob, object_ind)
+            person_scores = self.regress_tracks(blob)
 
             if len(self.tracks):
                 # create nms input
@@ -317,6 +322,10 @@ class Tracker:
                 keep = nms(self.get_pos().cuda(), person_scores, self.regression_nms_thresh).cuda()
 
                 self.tracks_to_inactive([self.tracks[i] for i in list(range(len(self.tracks))) if i not in keep])
+
+                if keep.nelement() > 0 and self.do_reid:
+                        new_features = self.get_appearances(blob)
+                        self.add_features(new_features)
 
         #####################
         # Create new tracks #
@@ -390,6 +399,7 @@ class Tracker:
 
     def get_results(self):
         return self.results
+
 
 class Track(object):
     """This class contains all necessary for every individual track."""
